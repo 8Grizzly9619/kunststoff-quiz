@@ -1,18 +1,23 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Kunststoff-Quiz – Lernfeld 6</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { font-family: sans-serif; padding: 2rem; background: #121212; color: #f1f1f1; }
-    .card { background: #1e1e1e; border-radius: 1rem; padding: 2rem; box-shadow: 0 0 10px #000; max-width: 600px; margin: auto; }
+    .card { background: #1e1e1e; border-radius: 1rem; padding: 2rem; box-shadow: 0 0 10px #000; max-width: 700px; margin: auto; }
     .question { font-size: 1.2rem; margin-bottom: 1rem; }
     .answers { display: flex; flex-direction: column; gap: 0.5rem; }
     button { padding: 0.8rem; border: none; border-radius: 0.5rem; background: #007bff; color: white; font-size: 1rem; cursor: pointer; }
     button:hover { background: #0056b3; }
-    .result { margin-top: 1rem; font-weight: bold; }
-    .progress { margin-top: 1rem; font-size: 0.9rem; color: #aaa; }
+    .result, .erklaerung { margin-top: 1rem; font-weight: bold; }
+    .erklaerung { color: #00e0ff; font-size: 0.95rem; }
+    .quelle { color: #aaaaaa; font-size: 0.85rem; margin-top: 0.3rem; }
+    .merksatz { color: #ffff99; font-size: 0.9rem; margin-top: 0.3rem; }
+    .progress, .score, .end { margin-top: 1rem; font-size: 1rem; text-align: center; }
+    .restart { text-align: center; margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -20,54 +25,84 @@
     <div class="question" id="question">Frage wird geladen...</div>
     <div class="answers" id="answers"></div>
     <div class="result" id="result"></div>
+    <div class="erklaerung" id="erklaerung"></div>
+    <div class="quelle" id="quelle"></div>
+    <div class="merksatz" id="merksatz"></div>
     <div class="progress" id="progress"></div>
+    <div class="score" id="score"></div>
+    <div class="end" id="end"></div>
+    <div class="restart">
+      <button onclick="resetQuiz()">🔁 Quiz neu starten</button>
+    </div>
   </div>
-
+  <script src="quiz_fragen_final.js"></script>
   <script>
-    const quiz = [
-      { frage: "Welche Aussage über Thermoplaste ist korrekt?", antworten: ["Sie sind hitzebeständig und zersetzen sich beim Erwärmen.", "Sie lassen sich nach dem Aushärten nicht mehr verformen.", "Sie lassen sich durch Erwärmung beliebig oft umformen.", "Sie sind immer gummiartig und elastisch."], korrekt: 2 },
-      { frage: "Was ist ein typisches Merkmal von PTFE?", antworten: ["Sehr hohe elektrische Leitfähigkeit", "Geringe Reibung", "Hohe Elastizität", "Biologisch abbaubar"], korrekt: 1 },
-      { frage: "Welche Eigenschaft hat NBR?", antworten: ["Hohe Temperaturbeständigkeit", "Ölbeständigkeit", "Gute Transparenz", "Hohe elektrische Leitfähigkeit"], korrekt: 1 },
-      { frage: "Was versteht man unter Schwindung bei Kunststoffen?", antworten: ["Verdampfung beim Erhitzen", "Verkleinerung des Volumens beim Abkühlen", "Aufquellen bei Feuchtigkeit", "Auflösung in Lösungsmitteln"], korrekt: 1 },
-      { frage: "Was bedeutet 'Plastifizieren'?", antworten: ["Abkühlen", "Entformen", "Schmelzen", "Verstärken"], korrekt: 2 },
-      { frage: "Welche Kunststoffgruppe ist gummiartig?", antworten: ["Thermoplaste", "Elastomere", "Duroplaste", "Polyblends"], korrekt: 1 },
-      { frage: "Was ist ein Polyblend?", antworten: ["Ein Reinstoff", "Eine Füllung", "Eine Kunststoffmischung", "Eine Farbe"], korrekt: 2 },
-      { frage: "Welche Temperatur hat Kunststoffschmelze bei PP ca.?", antworten: ["100 °C", "160 °C", "250 °C", "500 °C"], korrekt: 2 },
-      { frage: "Was ist das Merkmal eines Werkzeugs mit Schieber?", antworten: ["Herstellung von runden Bauteilen", "Herstellung mit Hinterschneidungen", "Herstellung von hohlen Teilen", "Verwendung von zwei Materialien"], korrekt: 1 },
-      { frage: "Was versteht man unter Kalandrieren?", antworten: ["Zerschneiden", "Verpressen", "Walzen zu Folien", "Aufblasen von Rohren"], korrekt: 2 }
-    ];
-
     let current = 0;
-    const questionEl = document.getElementById("question");
-    const answersEl = document.getElementById("answers");
-    const resultEl = document.getElementById("result");
-    const progressEl = document.getElementById("progress");
+    let richtig = 0;
+    let falsch = 0;
+    const maxFragen = quiz.length;
+
+    function updateScore() {
+      const prozent = Math.round((richtig / (richtig + falsch)) * 100 || 0);
+      document.getElementById("score").textContent = `✅ Richtig: ${richtig} | ❌ Falsch: ${falsch} | 🎯 Quote: ${prozent}%`;
+    }
 
     function showQuestion() {
+      if (current >= maxFragen) {
+        document.getElementById("question").textContent = "";
+        document.getElementById("answers").innerHTML = "";
+        document.getElementById("progress").textContent = "";
+        document.getElementById("result").textContent = "";
+        document.getElementById("erklaerung").textContent = "";
+        document.getElementById("quelle").textContent = "";
+        document.getElementById("merksatz").textContent = "";
+        document.getElementById("end").textContent = `🎉 Quiz beendet! Du hast ${richtig} von ${maxFragen} Fragen richtig beantwortet.`;
+        return;
+      }
+
       const q = quiz[current];
-      questionEl.textContent = `${current + 1}. ${q.frage}`;
-      answersEl.innerHTML = "";
-      resultEl.textContent = "";
-      progressEl.textContent = `Frage ${current + 1} von ${quiz.length}`;
+      document.getElementById("question").textContent = `${current + 1}. ${q.frage}`;
+      document.getElementById("answers").innerHTML = "";
+      document.getElementById("result").textContent = "";
+      document.getElementById("erklaerung").textContent = "";
+      document.getElementById("quelle").textContent = "";
+      document.getElementById("merksatz").textContent = "";
+      document.getElementById("progress").textContent = `Frage ${current + 1} von ${maxFragen}`;
       q.antworten.forEach((text, idx) => {
         const btn = document.createElement("button");
         btn.textContent = text;
-        btn.onclick = () => checkAnswer(idx);
-        answersEl.appendChild(btn);
+        btn.onclick = () => checkAnswer(idx, q);
+        document.getElementById("answers").appendChild(btn);
       });
     }
 
-    function checkAnswer(answerIndex) {
-      const q = quiz[current];
+    function checkAnswer(answerIndex, q) {
+      const richtiges = q.antworten[q.korrekt];
       if (answerIndex === q.korrekt) {
-        resultEl.textContent = "✅ Richtig!";
+        document.getElementById("result").textContent = "✅ Richtig!";
+        richtig++;
       } else {
-        resultEl.textContent = `❌ Falsch! Richtige Antwort: ${q.antworten[q.korrekt]}`;
+        document.getElementById("result").textContent = `❌ Falsch! Richtige Antwort: ${richtiges}`;
+        falsch++;
       }
-      current = (current + 1) % quiz.length;
-      setTimeout(showQuestion, 2500);
+      document.getElementById("erklaerung").textContent = q.erklaerung || "";
+      document.getElementById("quelle").textContent = q.quelle || "";
+      document.getElementById("merksatz").textContent = q.merksatz || "";
+      updateScore();
+      current++;
+      setTimeout(showQuestion, 3500);
     }
 
+    function resetQuiz() {
+      current = 0;
+      richtig = 0;
+      falsch = 0;
+      document.getElementById("end").textContent = "";
+      updateScore();
+      showQuestion();
+    }
+
+    updateScore();
     showQuestion();
   </script>
 </body>
